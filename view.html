@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>View & Cancel Tickets – TicketGo</title>
+<style>
+:root{
+  --blue:#1e64ff;
+  --txt:#0f1b3d;
+  --red:#d62828;
+  --muted:#8894b8;
+}
+body{
+  font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;
+  background:linear-gradient(135deg,#eef3ff,#ffffff);
+  color:var(--txt);margin:0;padding:20px;
+}
+header{
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;margin-bottom:20px;
+}
+.brand{font-weight:800;color:var(--blue);font-size:clamp(22px,4vw,28px);}
+.card{
+  background:#fff;border:1px solid #e6ecff;border-radius:18px;
+  padding:20px;box-shadow:0 8px 30px rgba(30,100,255,.08);
+  max-width:700px;margin:0 auto;
+}
+input{
+  padding:10px 12px;border:1px solid #cdd7ff;border-radius:12px;
+  width:100%;max-width:300px;margin-right:8px;
+}
+.btn{
+  border:0;border-radius:12px;padding:10px 18px;font-weight:700;
+  background:var(--blue);color:#fff;cursor:pointer;transition:0.2s;
+}
+.btn:hover{background:#144dcc;}
+table{
+  width:100%;border-collapse:collapse;margin-top:20px;font-size:15px;
+}
+th,td{border:1px solid #edf1ff;padding:8px;text-align:center;}
+th{background:var(--blue);color:#fff;}
+td button{
+  border:1px solid #cdd7ff;border-radius:8px;
+  padding:6px 10px;cursor:pointer;font-weight:600;
+  transition:0.2s;
+}
+.view-btn{background:#fff;color:var(--blue);}
+.view-btn:hover{background:var(--blue);color:#fff;}
+.cancel-btn{background:#fff;color:var(--red);border-color:#f1b0b0;}
+.cancel-btn:hover{background:var(--red);color:#fff;}
+.cancel-btn[disabled]{
+  color:#aaa;border-color:#ddd;background:#f7f7f7;cursor:not-allowed;
+}
+
+/* Popup styles */
+.popup-overlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.5);
+  display:flex;justify-content:center;align-items:center;
+  visibility:hidden;opacity:0;transition:0.3s;
+  z-index:999;
+}
+.popup{
+  background:#fff;border-radius:18px;padding:26px;
+  text-align:center;box-shadow:0 8px 25px rgba(30,100,255,.2);
+  width:90%;max-width:360px;
+  animation:fadeIn .3s ease;
+}
+@keyframes fadeIn {
+  from {transform:scale(0.9);opacity:0;}
+  to {transform:scale(1);opacity:1;}
+}
+.popup h3{margin-top:0;margin-bottom:12px;color:var(--red);}
+.popup input{
+  width:100%;padding:10px;border:1px solid #ccd7ff;
+  border-radius:10px;margin-bottom:16px;font-size:15px;
+}
+.popup .btns{
+  display:flex;justify-content:center;gap:10px;flex-wrap:wrap;
+}
+.popup .btn-cancel{
+  background:var(--red);
+  color:#fff;
+  border:none;
+  border-radius:12px;
+  padding:10px 20px;
+  font-weight:700;
+  cursor:pointer;
+  transition:0.2s;
+}
+.popup .btn-cancel:hover{background:#b61d1d;}
+.popup .btn-close{
+  background:#fff;color:var(--txt);border:1px solid #cdd7ff;
+  border-radius:12px;padding:10px 20px;font-weight:700;
+  cursor:pointer;transition:0.2s;
+}
+.popup .btn-close:hover{background:#f0f3ff;}
+.popup-overlay.active{visibility:visible;opacity:1;}
+
+/* Cancelling loader */
+.loader{
+  display:none;margin-top:12px;text-align:center;
+  font-weight:700;color:var(--red);font-size:15px;
+}
+.loader span{display:inline-block;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:0.2;}50%{opacity:1;}}
+
+/* Viewing Overlay */
+.view-overlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  display:flex;justify-content:center;align-items:center;
+  background:rgba(255,255,255,0.9);
+  font-size:1.5rem;font-weight:800;color:var(--blue);
+  visibility:hidden;opacity:0;transition:.3s;
+  z-index:1000;
+}
+.view-overlay.active{visibility:visible;opacity:1;}
+.view-content{
+  display:flex;align-items:center;gap:12px;
+  animation:pulse 1.5s infinite ease-in-out;
+}
+.spinner{
+  width:28px;height:28px;border:3px solid #dbe5ff;border-top:3px solid var(--blue);
+  border-radius:50%;animation:spin 1s linear infinite;
+}
+@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:.6;}50%{opacity:1;}}
+
+@media(max-width:600px){
+  body{padding:14px;}
+  th,td{font-size:14px;}
+  input{width:100%;margin-bottom:8px;}
+  .btn{width:100%;}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">🚌 TicketGo</div>
+  <a href="select.html" style="color:#555;text-decoration:none;">← Back</a>
+</header>
+
+<div class="card">
+  <h2>View & Cancel Your Tickets</h2>
+  <div style="margin:10px 0;display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
+    <input id="phoneInput" placeholder="Enter your Phone Number">
+    <button class="btn" onclick="searchTickets()">Search</button>
+  </div>
+  <div id="result"></div>
+</div>
+
+<!-- Cancel Confirmation Popup -->
+<div class="popup-overlay" id="popup">
+  <div class="popup">
+    <h3>⚠️ Confirm Cancellation</h3>
+    <p>Enter your <b>Booking ID</b> to confirm:</p>
+    <input type="text" id="confirmId" placeholder="Enter Booking ID">
+    <div class="btns">
+      <button class="btn-cancel" onclick="confirmCancel()">Confirm</button>
+      <button class="btn-close" onclick="closePopup()">Close</button>
+    </div>
+    <div class="loader" id="loader">Cancelling<span>.</span><span>.</span><span>.</span></div>
+  </div>
+</div>
+
+<!-- Viewing Overlay -->
+<div class="view-overlay" id="viewOverlay">
+  <div class="view-content">
+    <div class="spinner"></div>
+    Viewing your ticket...
+  </div>
+</div>
+
+<script>
+let cancelData = {};
+
+function getStore(){
+  return JSON.parse(localStorage.getItem('ticketgo_store')||"{}");
+}
+
+// Helper: check if route date is in past
+function isPastTicket(route){
+  const parts = route.split('on ');
+  if(parts.length < 2) return false;
+  const dateStr = parts[1].trim();
+  const routeDate = new Date(dateStr);
+  if(isNaN(routeDate)) return false;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  routeDate.setHours(0,0,0,0);
+  return routeDate < today;
+}
+
+function searchTickets(){
+  const phone=document.getElementById('phoneInput').value.trim();
+  if(!/^[6-9]\d{9}$/.test(phone)){
+    alert("Enter valid 10-digit phone number");
+    return;
+  }
+
+  const data=getStore();
+  let tickets=[];
+  for(const route in data){
+    const {confirmed,waiting}=data[route];
+    confirmed.forEach(t=>{if(t.phone===phone)tickets.push({...t,route,status:'CONFIRMED ✅'});});
+    waiting.forEach(t=>{if(t.phone===phone)tickets.push({...t,route,status:'WAITING 🕒'});});
+  }
+
+  const res=document.getElementById('result');
+  if(!tickets.length){
+    res.innerHTML="<i>No tickets found for this number.</i>";
+    return;
+  }
+
+  let html=`
+  <table>
+    <thead>
+      <tr><th>#</th><th>Booking ID</th><th>Name</th><th>Bus/Time/Date</th><th>Status</th><th>Action</th></tr>
+    </thead><tbody>`;
+
+  tickets.forEach((t,i)=>{
+    const past = isPastTicket(t.route);
+    html+=`
+      <tr>
+        <td>${i+1}</td>
+        <td>${t.id}</td>
+        <td>${t.name}</td>
+        <td>${t.route}</td>
+        <td>${past ? '⏳ Expired' : t.status}</td>
+        <td style="display:flex;justify-content:center;gap:6px;">
+          <button class="view-btn" onclick="viewTicket('${t.id}','${t.name}','${t.phone}','${t.route}')">View</button>
+          <button class="cancel-btn" ${past ? 'disabled title="Past ticket — cannot cancel"' : `onclick="showPopup('${t.id}','${t.name}','${t.phone}','${t.route}')"`}>
+            Cancel
+          </button>
+        </td>
+      </tr>`;
+  });
+  html+="</tbody></table>";
+  res.innerHTML=html;
+}
+
+function viewTicket(id,name,phone,route){
+  const [bus,timePart] = route.split('@').map(x=>x.trim());
+  let time = timePart;
+  if(time.includes('on')) time = time.split('on')[0].trim();
+
+  const overlay=document.getElementById('viewOverlay');
+  overlay.classList.add('active');
+
+  const q=new URLSearchParams({id,name,phone,bus,time}).toString();
+  setTimeout(()=>{
+    overlay.classList.remove('active');
+    window.location.href='ticket.html?'+q;
+  },2000);
+}
+
+// --- Cancel confirmation popup ---
+function showPopup(id,name,phone,route){
+  cancelData = {id,name,phone,route};
+  document.getElementById('confirmId').value="";
+  document.getElementById('loader').style.display="none";
+  document.getElementById('popup').classList.add('active');
+}
+function closePopup(){
+  document.getElementById('popup').classList.remove('active');
+}
+
+function confirmCancel(){
+  const entered=document.getElementById('confirmId').value.trim();
+  if(entered!==cancelData.id){
+    alert("Booking ID does not match. Please try again.");
+    return;
+  }
+
+  const loader=document.getElementById('loader');
+  loader.style.display="block";
+
+  setTimeout(()=>{
+    const [bus,timePart]=cancelData.route.split('@').map(x=>x.trim());
+    let [time,date] = timePart.includes('on') ? timePart.split('on').map(x=>x.trim()) : [timePart,""];
+    const key=`${bus} @ ${time}${date ? " on "+date : ""}`;
+    const s=getStore();
+
+    if(s[key]){
+      s[key].confirmed = s[key].confirmed.filter(t=>t.id!==cancelData.id);
+      s[key].waiting = s[key].waiting.filter(t=>t.id!==cancelData.id);
+      localStorage.setItem('ticketgo_store',JSON.stringify(s));
+    }
+
+    // Refresh in all pages
+    localStorage.setItem('ticketgo_lastCancelled', cancelData.id);
+
+    const q=new URLSearchParams({
+      id:cancelData.id,
+      name:cancelData.name,
+      phone:cancelData.phone,
+      bus,
+      time,
+      status:'cancelled'
+    }).toString();
+    window.location.href='ticket.html?'+q;
+  },2000);
+}
+</script>
+</body>
+</html>

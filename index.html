@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TicketGo – Welcome</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --blue:#1e64ff;
+    --blue2:#6a5cff;
+    --txt:#0f1b3d;
+  }
+  *{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+  }
+  body{
+    font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;
+    color:var(--txt);
+    background:linear-gradient(135deg,#eaf0ff,#ffffff);
+  }
+
+  /* Header */
+  .wrap{
+    width:100%;
+    max-width:1200px;
+    margin:0 auto;
+    padding:16px 20px;
+  }
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .brand{
+    font-weight:800;
+    font-size:clamp(22px,4vw,30px);
+    color:var(--blue);
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .idbox{
+    margin-top:8px;
+  }
+  #quote{
+    font-size:clamp(13px,2.8vw,15px);
+    font-style:italic;
+    color:#1a2b5f;
+    opacity:0;
+    transform:translateY(10px);
+    animation:fadeSlide 10s ease-in-out infinite;
+    background:linear-gradient(90deg,#1e64ff,#6a5cff);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    font-weight:600;
+    text-align:right;
+  }
+
+  @keyframes fadeSlide {
+    0% {opacity:0; transform:translateY(10px);}
+    10% {opacity:1; transform:translateY(0);}
+    90% {opacity:1; transform:translateY(0);}
+    100% {opacity:0; transform:translateY(-10px);}
+  }
+
+  /* Hero Section */
+  .hero{
+    min-height:80vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:30px 20px;
+  }
+  .banner{
+    background:#fff;
+    border-radius:20px;
+    box-shadow:0 8px 30px rgba(30,100,255,.08);
+    padding:30px 20px;
+    max-width:850px;
+    width:100%;
+    text-align:center;
+  }
+  .title{
+    font-size:clamp(26px,6vw,42px);
+    margin:0;
+    color:var(--txt);
+  }
+  .subtitle{
+    opacity:.8;
+    margin:8px 0 20px;
+    font-size:clamp(14px,3.5vw,17px);
+  }
+
+  /* Bus Buttons */
+  .busbar{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+    gap:10px;
+    margin-bottom:25px;
+  }
+  .bus{
+    background:#fff;
+    border:1px solid #e6ecff;
+    border-radius:14px;
+    padding:10px;
+    font-weight:600;
+    box-shadow:0 8px 20px rgba(30,100,255,.05);
+    transition:all .2s ease;
+  }
+  .bus:hover{
+    transform:translateY(-3px);
+    box-shadow:0 10px 25px rgba(30,100,255,.15);
+  }
+
+  /* Buttons */
+  .btn{
+    border:0;
+    border-radius:14px;
+    padding:12px 18px;
+    font-weight:800;
+    cursor:pointer;
+    transition:0.2s;
+  }
+  .btn-primary{
+    background:var(--blue);
+    color:#fff;
+    font-size:16px;
+  }
+  .btn-primary:hover{
+    background:#144dcc;
+  }
+
+  /* Footer */
+  footer{
+    text-align:center;
+    padding:20px 8px;
+    font-size:13px;
+    opacity:.8;
+  }
+
+  /* 📱 Mobile-only fixes */
+  @media (max-width:480px){
+    .banner{ padding:20px 14px; }
+
+    .wrap{ padding-left:16px; padding-right:16px; }
+    #quote{
+      text-align:center;
+      padding:0 8px;
+      overflow-wrap:anywhere;
+      word-break:break-word;
+    }
+
+    .busbar{ grid-template-columns:repeat(2,1fr); gap:10px; }
+
+    .bus{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      line-height:1.2;
+      font-size:16px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">🚌 TicketGo</div>
+    <div class="idbox">
+      <div id="quote"></div>
+    </div>
+  </header>
+</div>
+
+<section class="hero">
+  <div class="banner">
+    <h1 class="title">Welcome to <span style="color:var(--blue)">TicketGo</span></h1>
+    <p class="subtitle">Fast, clean and simple bus ticket booking.</p>
+
+    <div class="busbar">
+      <div class="bus">🚌 Pallevelugu</div>
+      <div class="bus">🚌 Express</div>
+      <div class="bus">🚌 Deluxe</div>
+      <div class="bus">🚌 Super Luxury</div>
+      <div class="bus">🚌 Rajadhani</div>
+      <div class="bus">🚌 Garuda</div>
+      <div class="bus">🚌 Garuda Plus</div>
+      <div class="bus">🚌 Metro Express</div>
+      <div class="bus">🚌 Metro Deluxe</div>
+      <div class="bus">🚌 Indra</div>
+    </div>
+
+    <a href="select.html">
+      <button class="btn btn-primary">Book Ticket</button>
+    </a>
+  </div>
+</section>
+
+<footer>© 2025 TicketGo | Travel with Trust 🚌</footer>
+
+<script>
+const quotes = [
+  "Every mile begins with a ticket — every story begins with TicketGo.",
+  "From city lights to quiet nights, TicketGo rides with you.",
+  "Journeys made simple, memories made forever.",
+  "Your seat to every destination — TicketGo.",
+  "Because travel should feel effortless, not endless.",
+  "Trusted by travelers, driven by comfort.",
+  "Where your journey matters, every time.",
+  "More than a ticket — it’s your trusted travel partner.",
+  "Ride beyond distance, travel with confidence.",
+  "Dream. Book. Go. Only with TicketGo."
+];
+let i = 0;
+function changeQuote() {
+  const q = document.getElementById("quote");
+  q.textContent = quotes[i++ % quotes.length];
+}
+changeQuote();
+setInterval(changeQuote, 10000);
+</script>
+</body>
+</html>

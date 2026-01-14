@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TicketGo – Booking System</title>
+<style>
+:root{--blue:#1e64ff;--txt:#0f1b3d;--muted:#5d6b8a;--red:#d62828;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;
+  color:var(--txt);
+  background:linear-gradient(135deg,#eef3ff,#ffffff);
+}
+.wrap{width:min(1200px,94vw);margin:0 auto;padding:18px;}
+header{display:flex;justify-content:space-between;align-items:center;padding:10px 0;}
+.brand{font-weight:800;font-size:1.4rem;color:var(--blue);}
+.pill{
+  padding:8px 10px;border:1px solid #cdd7ff;border-radius:999px;background:#fff;
+  text-decoration:none;color:var(--txt);
+}
+.grid{display:grid;grid-template-columns:1fr;gap:16px;}
+@media(min-width:1000px){.grid{grid-template-columns:1.2fr .8fr;}}
+.card{
+  background:#fff;border:1px solid #e6ecff;border-radius:18px;padding:16px;
+  box-shadow:0 8px 30px rgba(30,100,255,.08);
+}
+.row{display:flex;gap:10px;flex-wrap:wrap;}
+input{padding:10px 12px;border:1px solid #cdd7ff;border-radius:12px;}
+.btn{
+  border:0;border-radius:14px;padding:12px 16px;font-weight:800;cursor:pointer;
+  transition:0.2s;display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn-blue{background:var(--blue);color:#fff;border:1px solid var(--blue);}
+.btn-primary{background:#fff;color:var(--blue);border:1px solid #cdd7ff;}
+.btn-primary:hover{background:#eaf0ff;}
+.btn-primary:active{background:var(--blue);color:#fff;border-color:var(--blue);}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+th,td{border:1px solid #edf1ff;padding:8px;}
+th{background:#1e64ff;color:#fff;}
+.scroll-area{
+  max-height:250px;overflow-y:auto;border-radius:12px;border:1px solid #f0f2ff;
+}
+#statBox{
+  background:#f3f7ff;border:1px solid #d3e0ff;border-radius:12px;padding:10px;margin-top:10px;
+}
+
+/* 🔵 Overlay animations (Cancel + View + Book) */
+.overlay{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  display:flex;justify-content:center;align-items:center;
+  background:rgba(255,255,255,0.85);
+  font-size:1.5rem;font-weight:800;
+  visibility:hidden;opacity:0;transition:.3s;
+  z-index:999;
+}
+.overlay.active{visibility:visible;opacity:1;}
+.overlay-content{
+  display:flex;align-items:center;gap:12px;
+  animation:pulse 1.5s infinite ease-in-out;
+}
+.spinner{
+  width:28px;height:28px;border:3px solid #dbe5ff;border-top:3px solid var(--blue);
+  border-radius:50%;animation:spin 1s linear infinite;
+}
+@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+@keyframes pulse{
+  0%,100%{opacity:.5;transform:scale(1);}
+  50%{opacity:1;transform:scale(1.05);}
+}
+.fade-text{transition:opacity .5s ease;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">🚌 TicketGo</div>
+    <a class="pill" href="index.html">← Back</a>
+  </header>
+
+  <div class="card" id="routeInfo"></div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Book a Ticket</h3>
+      <div class="row">
+        <input id="name" placeholder="Name">
+        <input id="phone" placeholder="Phone (10-digit)">
+        <button class="btn btn-blue" onclick="book()">Book</button>
+        <button class="btn" onclick="clearForm()">Clear</button>
+      </div>
+      <p id="seatMsg" class="muted fade-text" style="margin-top:8px;">Checking seat availability...</p>
+    </div>
+
+    <div class="card">
+      <h3>Cancel a Ticket</h3>
+      <div class="row">
+        <input id="cancelId" placeholder="Booking ID">
+        <input id="cancelPhone" placeholder="Phone Number">
+        <button class="btn btn-primary" onclick="cancelTicket()">Cancel Ticket</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="statBox">
+    <b>View Your Booked Tickets:</b><br>
+    <div class="row" style="margin-top:10px;">
+      <input id="searchPhone" placeholder="Enter your phone number">
+      <button class="btn btn-primary" onclick="searchTickets()">Search</button>
+    </div>
+    <div id="searchResults" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="grid" style="margin-top:20px;">
+    <div class="card">
+      <h3>Confirmed (max 40)</h3>
+      <div class="scroll-area">
+        <table id="tblC">
+          <thead><tr><th>Booking ID</th><th>Name</th><th>Phone</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Waiting List</h3>
+      <div class="scroll-area">
+        <table id="tblW">
+          <thead><tr><th>Booking ID</th><th>Name</th><th>Phone</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 🟢 Viewing Overlay -->
+<div class="overlay" id="viewOverlay" style="color:var(--blue);">
+  <div class="overlay-content">
+    <div class="spinner"></div>
+    Viewing your ticket...
+  </div>
+</div>
+
+<!-- 🔴 Cancelling Overlay -->
+<div class="overlay" id="cancelOverlay" style="color:var(--red);">
+  <div class="overlay-content">
+    <div class="spinner"></div>
+    Cancelling your ticket...
+  </div>
+</div>
+
+<!-- 🟢 Booking Overlay -->
+<div class="overlay" id="bookOverlay" style="color:var(--blue);">
+  <div class="overlay-content">
+    <div class="spinner"></div>
+    Booking your ticket...
+  </div>
+</div>
+
+<script>
+const CAP = 40;
+function qs(k){return new URLSearchParams(location.search).get(k)||"";}
+const bus = qs('bus'), time = qs('time'), date = qs('date');
+const routeKey = (bus && time && date) ? `${bus} @ ${time} on ${date}` : "GLOBAL";
+document.getElementById('routeInfo').innerHTML =
+ `<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+    <div><b>Bus:</b> ${bus} &nbsp;|&nbsp; <b>Time:</b> ${time} &nbsp;|&nbsp; <b>Date:</b> ${date}</div>
+    <a class="pill" href="select.html">Change Bus/Time/Date</a>
+  </div>`;
+
+function getStore(){return JSON.parse(localStorage.getItem('ticketgo_store')||"{}");}
+function saveStore(o){localStorage.setItem('ticketgo_store',JSON.stringify(o));}
+function getLists(){
+  const s=getStore();
+  if(!s[routeKey]) s[routeKey]={confirmed:[],waiting:[]};
+  return s[routeKey];
+}
+function setLists(l){const s=getStore();s[routeKey]=l;saveStore(s);}
+function idGen(){
+  const c='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let s='TG';for(let i=0;i<5;i++)s+=c[Math.floor(Math.random()*c.length)];
+  return s;
+}
+function isPhoneOk(p){return /^[6-9]\d{9}$/.test(p);}
+
+function refresh(){
+  const {confirmed,waiting}=getLists();
+  const tbC=document.querySelector('#tblC tbody');
+  const tbW=document.querySelector('#tblW tbody');
+  tbC.innerHTML=tbW.innerHTML='';
+  confirmed.forEach(t=>{
+    const masked='******'+t.phone.slice(-4);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${t.id}</td><td>${t.name}</td><td>${masked}</td>`;
+    tbC.appendChild(tr);
+  });
+  waiting.forEach(t=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${t.id}</td><td>${t.name}</td><td>${t.phone}</td>`;
+    tbW.appendChild(tr);
+  });
+
+  const msg=document.getElementById('seatMsg');
+  const left=CAP-confirmed.length;
+  msg.style.opacity=0;
+  setTimeout(()=>{
+    if(left>1){msg.textContent=`🎟️ ${left} seats available — book now to confirm your seat!`;msg.style.color="#1e64ff";}
+    else if(left===1){msg.textContent="⚡ Only 1 seat left! Hurry up to confirm your seat!";msg.style.color="#d62828";}
+    else{msg.textContent="🕒 All seats are full — your booking will go to the waiting list.";msg.style.color="#ff7b00";}
+    msg.style.opacity=1;
+  },300);
+
+  document.title=`TicketGo – Confirmed ${confirmed.length}/${CAP} • Waiting ${waiting.length}`;
+}
+
+function book(){
+  const name=document.getElementById('name').value.trim();
+  const phone=document.getElementById('phone').value.trim();
+  if(name.length<2||!/^[A-Za-z ]+$/.test(name)){alert("Enter valid name");return;}
+  if(!isPhoneOk(phone)){alert("Enter 10-digit mobile starting 6-9");return;}
+
+  const overlay=document.getElementById('bookOverlay');
+  overlay.classList.add('active');
+
+  setTimeout(()=>{
+    const lists=getLists();
+    const ticket={id:idGen(),name,phone,date};
+    let msg="";
+    if(lists.confirmed.length<CAP){
+      lists.confirmed.push(ticket);
+      msg=`✅ Ticket Confirmed!\nBooking ID: ${ticket.id}\nDate: ${date}`;
+    }else{
+      lists.waiting.push(ticket);
+      msg=`🕒 Added to Waiting List.\nBooking ID: ${ticket.id}\nDate: ${date}`;
+    }
+    setLists(lists);
+    refresh();
+    clearForm();
+    overlay.classList.remove('active');
+    alert(msg);
+  },2000);
+}
+
+function viewTicket(id,name,phone){
+  const overlay=document.getElementById('viewOverlay');
+  overlay.classList.add('active');
+  const q=new URLSearchParams({id,name,phone,bus,time,date}).toString();
+  setTimeout(()=>{
+    overlay.classList.remove('active');
+    window.location.href='ticket.html?'+q;
+  },2000);
+}
+
+function searchTickets(){
+  const phone=document.getElementById('searchPhone').value.trim();
+  if(!isPhoneOk(phone)){alert("Enter valid 10-digit phone number");return;}
+  const {confirmed}=getLists();
+  const results=document.getElementById('searchResults');
+  const myTickets=confirmed.filter(t=>t.phone===phone);
+  if(myTickets.length===0){results.innerHTML="<i>No confirmed tickets found.</i>";return;}
+  results.innerHTML="";
+  myTickets.forEach(t=>{
+    const div=document.createElement("div");
+    div.style.marginBottom="6px";
+    div.innerHTML=`
+      <b>${t.name}</b> – ${t.id} (${date})
+      <button class="btn btn-blue" style="padding:4px 10px;margin-left:6px"
+        onclick="viewTicket('${t.id}','${t.name}','${t.phone}')">
+        View Ticket
+      </button>`;
+    results.appendChild(div);
+  });
+}
+
+// ✅ Updated Cancel Function (works across all pages)
+function cancelTicket(){
+  const id = document.getElementById('cancelId').value.trim().toUpperCase();
+  const phone = document.getElementById('cancelPhone').value.trim();
+  if (!id || !phone) {alert("Enter Booking ID and Phone");return;}
+
+  const allStore = getStore();
+  let cancelled = false;
+
+  for (const key in allStore) {
+    const lists = allStore[key];
+    let idx = lists.confirmed.findIndex(t => t.id === id && t.phone === phone);
+    if (idx > -1) {
+      lists.confirmed.splice(idx, 1);
+      if (lists.waiting.length) lists.confirmed.push(lists.waiting.shift());
+      cancelled = true;
+    } else {
+      idx = lists.waiting.findIndex(t => t.id === id && t.phone === phone);
+      if (idx > -1) {
+        lists.waiting.splice(idx, 1);
+        cancelled = true;
+      }
+    }
+    allStore[key] = lists;
+  }
+
+  if (cancelled) {
+    saveStore(allStore);
+    refresh();
+    const overlay = document.getElementById('cancelOverlay');
+    overlay.classList.add('active');
+    setTimeout(() => {
+      overlay.classList.remove('active');
+      const q = new URLSearchParams({id, name:"", phone, bus, time, date, status:"cancelled"}).toString();
+      window.location.href = 'ticket.html?' + q;
+    }, 2000);
+  } else {
+    alert("Booking ID or Phone not found.");
+  }
+}
+
+function clearForm(){
+  document.getElementById('name').value='';
+  document.getElementById('phone').value='';
+}
+refresh();
+</script>
+</body>
+</html>

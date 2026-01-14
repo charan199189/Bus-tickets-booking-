@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Select Bus & Time – TicketGo</title>
+<style>
+  :root { --blue:#1e64ff; --txt:#0f1b3d; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;
+    color:var(--txt);
+    background:linear-gradient(135deg,#eef3ff,#ffffff);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+
+  header{
+    display:flex;justify-content:space-between;align-items:center;
+    flex-wrap:wrap;padding:18px 5vw;
+  }
+  .brand{font-weight:800;font-size:clamp(20px,4vw,28px);color:var(--blue);}
+  .muted{opacity:.75;font-size:clamp(14px,3vw,16px);}
+  .wrap{width:min(1100px,92vw);margin:0 auto;padding-bottom:40px;flex:1;}
+
+  .grid{display:grid;grid-template-columns:1fr;gap:20px;}
+  @media(min-width:900px){.grid{grid-template-columns:1.2fr .8fr;}}
+
+  .card{
+    background:#fff;border:1px solid #e6ecff;border-radius:18px;
+    padding:18px;box-shadow:0 8px 30px rgba(30,100,255,.08);
+  }
+
+  h2{margin-bottom:10px;color:var(--blue);font-size:clamp(18px,3vw,22px);}
+
+  .buses{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+    gap:10px;
+  }
+  .bus{
+    padding:12px;border:1px solid #e6ecff;border-radius:14px;
+    cursor:pointer;text-align:center;font-weight:600;
+    background:#fff;transition:0.2s;font-size:clamp(14px,3vw,16px);
+    opacity:0;transform:translateY(10px);
+    animation:fadeInUp 0.5s ease forwards;
+  }
+  .bus.active{
+    border-color:var(--blue);
+    box-shadow:0 0 0 3px rgba(30,100,255,.15);
+  }
+
+  .times{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+    gap:10px;
+  }
+  .time{
+    padding:10px;border:1px solid #e6ecff;border-radius:12px;
+    text-align:center;cursor:pointer;background:#fff;
+    transition:0.2s;font-weight:600;
+    opacity:0;transform:translateY(10px);
+    animation:fadeInUp 0.5s ease forwards;
+  }
+  .time.active{
+    border-color:var(--blue);
+    box-shadow:0 0 0 3px rgba(30,100,255,.15);
+  }
+  .time.disabled{
+    background:#f5f5f5;
+    color:#888;
+    cursor:not-allowed;
+    opacity:0.6;
+    border-style:dashed;
+  }
+
+  @keyframes fadeInUp {
+    to {opacity:1; transform:translateY(0);}
+  }
+
+  .date-box{margin-top:15px;display:flex;flex-direction:column;gap:8px;}
+  input[type="date"]{
+    padding:10px 12px;border:1px solid #cdd7ff;border-radius:12px;
+    font-size:16px;outline:none;transition:0.2s;width:100%;
+  }
+
+  .btn{
+    border:0;border-radius:14px;padding:12px 16px;font-weight:800;
+    cursor:pointer;background:var(--blue);color:#fff;
+    transition:0.2s;width:100%;font-size:clamp(14px,3vw,18px);
+  }
+  .btn:hover{background:#144dcc;}
+
+  .msg{
+    text-align:center;color:#b30000;font-weight:600;
+    background:#fff4f4;border:1px solid #f0c0c0;
+    padding:10px;border-radius:12px;margin:10px 0;display:none;
+  }
+
+  #selText{margin-top:8px;font-size:14px;opacity:.75;text-align:center;}
+
+  .divider{
+    text-align:center;
+    margin:20px 0;
+    color:#999;
+    font-weight:600;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">🚌 TicketGo</div>
+  <a href="index.html" class="muted">← Back</a>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+    <div class="card">
+      <h2>Select a Bus</h2>
+      <div id="busList" class="buses"></div>
+    </div>
+
+    <div class="card">
+      <h2>Select Time & Date</h2>
+      <div id="timeList" class="times"></div>
+      <div id="msgBox" class="msg">🌙 Today’s journeys have departed!<br>Please select another date to book your ticket. 🚌✨</div>
+
+      <div class="date-box">
+        <label for="travelDate" style="font-weight:600;color:var(--txt);">Select Travel Date:</label>
+        <input type="date" id="travelDate">
+      </div>
+
+      <div style="margin-top:18px;">
+        <button class="btn" onclick="proceed()">Next</button>
+      </div>
+      <p id="selText"></p>
+    </div>
+  </div>
+
+  <div class="divider">— OR —</div>
+
+  <div style="text-align:center;margin-top:10px;">
+    <button class="btn" style="width:auto;padding:10px 22px;" onclick="window.location.href='view.html'">View or Cancel Tickets</button>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const buses = [
+    "Pallevelugu","Express","Deluxe","Super Luxury",
+    "Rajadhani","Garuda","Garuda Plus","Metro Express","Metro Deluxe","Indra"
+  ];
+
+  const timeSlots = [
+    {time:"07:00 AM",icon:"🌅"},
+    {time:"10:00 AM",icon:"🌞"},
+    {time:"01:00 PM",icon:"☀️"},
+    {time:"04:00 PM",icon:"🏙️"},
+    {time:"07:00 PM",icon:"🌆"},
+    {time:"10:00 PM",icon:"🌙"}
+  ];
+
+  let selBus="", selTime="", selDate="";
+
+  function draw(){
+    const b=document.getElementById('busList');
+    b.innerHTML="";
+    buses.forEach(name=>{
+      const div=document.createElement('div');
+      div.className='bus';
+      div.textContent='🚌 '+name;
+      div.onclick=()=>{
+        selBus=name;
+        [...b.children].forEach(x=>x.classList.remove('active'));
+        div.classList.add('active');
+        updateSel();
+      };
+      b.appendChild(div);
+    });
+
+    createTimeSlots();
+    const today=new Date().toISOString().split('T')[0];
+    document.getElementById('travelDate').setAttribute('min',today);
+    document.getElementById('travelDate').addEventListener('change',createTimeSlots);
+  }
+
+  function createTimeSlots(){
+    const t=document.getElementById('timeList');
+    const msg=document.getElementById('msgBox');
+    const selectedDate=document.getElementById('travelDate').value;
+    const now=new Date();
+    const todayISO=new Date().toISOString().split('T')[0];
+    t.innerHTML='';
+
+    let activeTimeExists=false;
+    timeSlots.forEach(slot=>{
+      const div=document.createElement('div');
+      div.className='time';
+      div.textContent=`${slot.icon} ${slot.time}`;
+
+      let [hour]=slot.time.split(':');
+      hour=parseInt(hour);
+      if(slot.time.includes('PM') && hour!==12) hour+=12;
+      if(slot.time.includes('AM') && hour===12) hour=0;
+
+      if(selectedDate===todayISO){
+        if(hour < now.getHours() || (hour===now.getHours() && now.getMinutes()>=0)){
+          div.classList.add('disabled');
+          div.textContent=`⏳ ${slot.time}`;
+        } else {
+          activeTimeExists=true;
+          div.onclick=()=>{
+            selTime=slot.time;
+            [...t.children].forEach(x=>x.classList.remove('active'));
+            div.classList.add('active');
+            updateSel();
+          };
+        }
+      } else {
+        div.onclick=()=>{
+          selTime=slot.time;
+          [...t.children].forEach(x=>x.classList.remove('active'));
+          div.classList.add('active');
+          updateSel();
+        };
+        activeTimeExists=true;
+      }
+      t.appendChild(div);
+    });
+
+    msg.style.display = (!activeTimeExists && selectedDate===todayISO) ? 'block' : 'none';
+  }
+
+  function updateSel(){
+    const p=document.getElementById('selText');
+    p.textContent=(selBus && selTime)?`Selected: ${selBus} @ ${selTime}`:'';
+  }
+
+  window.proceed=function(){
+    selDate=document.getElementById('travelDate').value;
+    if(!selBus||!selTime){alert("Please select bus and time.");return;}
+    if(!selDate){alert("Please select your travel date.");return;}
+    const q=new URLSearchParams({bus:selBus,time:selTime,date:selDate}).toString();
+    window.location.href='app.html?'+q;
+  }
+
+  draw();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Your Ticket – TicketGo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --blue: #1e64ff;
+    --txt: #0f1b3d;
+    --red: #d62828;
+  }
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body {
+    font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif;
+    color: var(--txt);
+    background: linear-gradient(135deg, #eef3ff, #ffffff);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+  }
+
+  .wrap {
+    width: min(800px, 92vw);
+    margin-top: 40px;
+    padding: 20px;
+    position: relative;
+  }
+
+  /* Back Button (top-right) */
+  .back-btn {
+    position: absolute;
+    top: -10px;
+    right: 0;
+    background: none;
+    border: none;
+    color: #000;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .back-btn:hover { color: var(--blue); }
+
+  /* Ticket Card */
+  .card {
+    background: #fff;
+    border: 1px solid #e6ecff;
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: 0 10px 35px rgba(30, 100, 255, .08);
+    text-align: left;
+    animation: fadeIn .4s ease;
+  }
+  @keyframes fadeIn {
+    from {opacity:0;transform:translateY(10px);}
+    to {opacity:1;transform:translateY(0);}
+  }
+
+  .title {
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 5px;
+  }
+
+  .muted {
+    opacity: .75;
+    margin-bottom: 14px;
+    font-size: 15px;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 10px 0;
+  }
+
+  .status {
+    font-weight: 700;
+    font-size: 18px;
+    color: green;
+  }
+  .status.cancelled { color: var(--red); }
+
+  /* Footer buttons */
+  .footer-buttons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 22px;
+  }
+  .btn {
+    border: 0;
+    border-radius: 14px;
+    padding: 12px 18px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 15px;
+  }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:hover { background: #144dcc; }
+  .btn-neutral { background: #fff; border: 1px solid #cdd7ff; color: var(--txt); }
+  .btn-neutral:hover { background: #f1f4ff; }
+
+  /* Hide extras in print */
+  @media print {
+    .footer-buttons, .back-btn { display: none !important; }
+    body { background: #fff; }
+    .card { box-shadow: none; border: 1px solid #000; }
+  }
+
+  @media (max-width: 600px) {
+    .wrap { margin-top: 20px; padding: 14px; }
+    .row { grid-template-columns: 1fr; }
+    .footer-buttons { flex-direction: column; gap: 8px; }
+    .btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="mainWrap">
+  <button class="back-btn" onclick="goBack()">← Back</button>
+
+  <div class="card" id="ticketCard">
+    <div class="title" id="titleTxt">🎟️ TicketGo – Booking Confirmation</div>
+    <p class="muted" id="infoText">Save this ticket or note your Booking ID.</p>
+
+    <div class="row">
+      <div><b>Booking ID</b><br><span id="id">—</span></div>
+      <div><b>Name</b><br><span id="name">—</span></div>
+      <div><b>Phone</b><br><span id="phone">—</span></div>
+      <div><b>Bus</b><br><span id="bus">—</span></div>
+      <div><b>Time</b><br><span id="time">—</span></div>
+      <div><b>Status</b><br><span id="status" class="status">—</span></div>
+    </div>
+  </div>
+
+  <div class="footer-buttons" id="buttonArea">
+    <a href="index.html"><button class="btn btn-neutral">Home</button></a>
+    <button class="btn btn-primary" onclick="window.print()">Print</button>
+  </div>
+</div>
+
+<script>
+function qs(k){ return new URLSearchParams(location.search).get(k)||""; }
+
+const id = qs('id'),
+      name = qs('name'),
+      phone = qs('phone'),
+      bus = qs('bus'),
+      time = qs('time'),
+      cancelled = qs('status') === 'cancelled';
+
+// Fill ticket details safely
+document.getElementById('id').textContent = id || "—";
+document.getElementById('name').textContent = name || "—";
+document.getElementById('phone').textContent = phone ? phone.slice(0,5)+' '+phone.slice(5) : "—";
+document.getElementById('bus').textContent = bus || "—";
+document.getElementById('time').textContent = time || "—";
+
+// Ticket status & info
+const statusEl = document.getElementById('status');
+const infoText = document.getElementById('infoText');
+const key = `${bus} @ ${time}`;
+const store = JSON.parse(localStorage.getItem('ticketgo_store')||"{}");
+
+if(cancelled){
+  statusEl.textContent = "❌ Ticket Cancelled";
+  statusEl.classList.add('cancelled');
+  document.getElementById("titleTxt").innerHTML = "🚌 TicketGo – Ticket Cancelled";
+  infoText.textContent = "This ticket has been cancelled. Keep the ID for reference.";
+  infoText.style.color = "var(--red)";
+}else{
+  let status = 'CONFIRMED ✅';
+  if(store[key]){
+    const {confirmed, waiting} = store[key];
+    if(confirmed.some(t=>t.id===id)) status = 'CONFIRMED ✅';
+    else if(waiting.some(t=>t.id===id)) status = 'WAITING 🕒';
+  }
+  statusEl.textContent = status;
+}
+
+// ✅ Smart Back (only previous page)
+function goBack(){
+  if (document.referrer && document.referrer !== window.location.href) {
+    // Return to the exact previous page user came from
+    window.location.href = document.referrer;
+  } else {
+    // As a safety fallback if no referrer (e.g. opened directly)
+    history.back();
+  }
+}
+</script>
+</body>
+</html>
